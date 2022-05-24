@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
+from sklearn.cluster import KMeans
 from sklearn.feature_selection import SelectFromModel
-from sklearn.neighbors import NearestNeighbors
+from sklearn.neighbors import KNeighborsClassifier, NearestNeighbors
 from sklearn.svm import LinearSVC
 
 from data_converter import DataConverter
@@ -65,27 +66,27 @@ print(train_new.shape, train.shape)
 # Klasyfikacja
 # NN,
 
-nbrs = NearestNeighbors(n_neighbors=1).fit(train_new)
+clf = KNeighborsClassifier(1)
+clf.fit(train_new, train[:, -1].astype('int'))
+predictions = clf.predict(test_new)
 
-valid = 0
-for test_idx in range(len(test_new)):
-    _, indices = nbrs.kneighbors(test_new[test_idx].reshape(1, -1))
-
-    print(indices)
-    print(test[indices[0]])
-
-    estimated_family = test[indices[0]][-1]
-    family = test[test_idx][-1]
-
-    if estimated_family == family:
-        valid += 1
-
-print(f"Accuracy: {valid/len(test_new)*100}%")
-
-
-
+print(f"Accuracy: {round(sum(test[:, -1] == predictions)/len(predictions), 3)}%")
 
 # k-NN,
+
+clf = KNeighborsClassifier(10)
+clf.fit(train_new, train[:, -1].astype('int'))
+predictions = clf.predict(test_new)
+
+print(f"Accuracy: {round(sum(test[:, -1] == predictions)/len(predictions), 3)}%")
+
 # NM i
+
+kmeans = KMeans().fit(train_new, train[:, -1].astype('int'))
+predictions = kmeans.predict(test_new)
+
+print(f"Accuracy: {round(sum(test[:, -1] == predictions)/len(predictions), 3)}%")
+
+
 # k-NM.
 
