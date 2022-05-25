@@ -1,24 +1,19 @@
-import pandas as pd
+import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.cluster import KMeans
+import pandas as pd
+
+from sklearn import preprocessing
 from sklearn.feature_selection import SelectFromModel
-from sklearn.neighbors import KNeighborsClassifier, NearestNeighbors
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import LinearSVC
 
 from data_converter import DataConverter
-from sklearn.model_selection import train_test_split
-from sklearn import preprocessing
+from knm import knm_fit
 
-import matplotlib.pyplot as plt
-
-
-def split_data(data, train_percentage):
-    return train_test_split(data, train_size=int(len(data)*train_percentage))
+# Wczytanie danych
 
 data = pd.read_csv("primary_data.csv", sep=';')
-
-#konfigurowalny podzia zbioru
-
 
 # Jest 20 cech, cechy są w formie tekstowej i wymagają przetworzenia na liczby
 # zliczanie próbek w klasie
@@ -49,12 +44,15 @@ label_numbers = np.reshape(np.array([classes.index(label) for label in labels]),
 
 # podział zbioru na testowego na testowy i walidacyjne
 
+def split_data(data, train_percentage):
+    return train_test_split(data, train_size=int(len(data)*train_percentage))
+
 normalized_with_labels = np.append(normalized, label_numbers, 1)
 train, test = split_data(normalized_with_labels, 0.8)
 
 # Wybór najlepszych cech "L1-based feature selection"
 
-lsvc = LinearSVC().fit(train[:, :-1], train[:, -1].astype('int'))
+lsvc = LinearSVC(dual=False).fit(train[:, :-1], train[:, -1].astype('int'))
 model = SelectFromModel(lsvc, prefit=True)
 
 train_new = model.transform(train[:, :-1])
@@ -66,27 +64,32 @@ print(train_new.shape, train.shape)
 # Klasyfikacja
 # NN,
 
+labels_int = train[:, -1].astype('int')
+
 clf = KNeighborsClassifier(1)
-clf.fit(train_new, train[:, -1].astype('int'))
+clf.fit(train_new, labels_int)
 predictions = clf.predict(test_new)
 
-print(f"Accuracy: {round(sum(test[:, -1] == predictions)/len(predictions), 3)}%")
+print("NN")
+print(f"Accuracy: {round(100*sum(test[:, -1] == predictions)/len(predictions), 3)}%")
 
 # k-NN,
 
 clf = KNeighborsClassifier(10)
-clf.fit(train_new, train[:, -1].astype('int'))
+clf.fit(train_new, labels_int)
 predictions = clf.predict(test_new)
 
-print(f"Accuracy: {round(sum(test[:, -1] == predictions)/len(predictions), 3)}%")
+print("KNN")
+print(f"Accuracy: {round(100*sum(test[:, -1] == predictions)/len(predictions), 3)}%")
 
 # NM i
 
-kmeans = KMeans().fit(train_new, train[:, -1].astype('int'))
-predictions = kmeans.predict(test_new)
-
-print(f"Accuracy: {round(sum(test[:, -1] == predictions)/len(predictions), 3)}%")
-
+print("NM")
+predictions = knm_fit(train_new, labels_int, test_new, k=1)
+print(f"Accuracy: {round(100*sum(test[:, -1] == predictions)/len(predictions), 3)}%")
 
 # k-NM.
 
+print("k-NM")
+predictions = knm_fit(train_new, labels_int, test_new, k=12)
+print(f"Accuracy: {round(100*sum(test[:, -1] == predictions)/len(predictions), 3)}%")
